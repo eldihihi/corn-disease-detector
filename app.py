@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 import os
-import gdown 
+import gdown  # Pastikan 'gdown' ada di requirements.txt Anda
 import requests
 import json
 import base64
@@ -95,17 +95,14 @@ def load_all_models():
 
         if not os.path.exists(local_path):
             # Pesan unduhan dihilangkan atau diganti dengan spinner kustom yang tidak terlalu 'berisik'
-            # st.info(f"⬇️ Mengunduh model {model_name} dari Google Drive... Ini mungkin memakan waktu.")
             try:
                 gdown.download(id=file_id, output=local_path, quiet=True, fuzzy=True) 
-                # st.success(f"Model {model_name} berhasil diunduh!") # Pesan berhasil dihilangkan
             except Exception as e:
                 st.error(f"❌ ERROR: Gagal mengunduh model {model_name} dari Google Drive.")
                 st.error(f"Pastikan FILE_ID ({file_id}) benar dan akses sharing link sudah diatur 'Anyone with the link'.")
                 st.error(f"Detail error: {e}")
                 st.stop()
         else:
-            # st.info(f"Model {model_name} sudah ada secara lokal. Melewatkan pengunduhan.") # Pesan dihilangkan
             pass # Lakukan apa-apa jika model sudah ada
 
         try:
@@ -430,9 +427,7 @@ def main():
     apply_custom_styles()
     render_header()
 
-    # Model ensemble dimuat secara global di luar main() dengan @st.cache_resource
-    # jadi tidak perlu dipanggil di sini lagi, cukup panggil variabelnya langsung
-
+    # Inisialisasi variabel state sesi
     if "uploaded_file" not in st.session_state:
         st.session_state.uploaded_file = None
     if "show_result" not in st.session_state:
@@ -440,24 +435,35 @@ def main():
     if "upload_key" not in st.session_state: 
         st.session_state.upload_key = "uploader_1"
 
+    # Fungsi untuk mereset prediksi
     def reset_prediction():
         st.session_state.uploaded_file = None
         st.session_state.show_result = False
         st.session_state.upload_key = f"uploader_{np.random.randint(10000)}" 
-        st.rerun()
+        st.rerun() # Memastikan Streamlit me-rerun dan kembali ke tampilan awal
 
+    # Buat dua kolom untuk tata letak
     col1, col2 = st.columns([1.2, 1])
 
+    # Logika untuk menampilkan pengunggah file atau hasil prediksi
+    # Jika belum ada file diunggah atau reset_prediction dipanggil
     if st.session_state.uploaded_file is None:
         with col1:
-            uploaded = st.file_uploader("", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key)
-            if uploaded:
+            # st.file_uploader akan mengembalikan None jika tidak ada file atau dihapus.
+            # Jika file baru diunggah, ia akan mengembalikan objek UploadedFile.
+            uploaded = st.file_uploader("Unggah gambar daun jagung...", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key)
+            
+            # Cek apakah ada file baru yang diunggah
+            if uploaded is not None and uploaded != st.session_state.uploaded_file:
                 st.session_state.uploaded_file = uploaded
                 st.session_state.show_result = True
-                st.rerun()
+                st.rerun() # Trigger rerun untuk memproses file yang baru diunggah
+            elif uploaded is None and st.session_state.uploaded_file is not None:
+                # Ini kondisi jika pengguna menghapus file yang sudah diunggah
+                reset_prediction() # Reset state untuk kembali ke uploader
         with col2:
-            st.empty()
-    else: 
+            st.empty() # Kosongkan kolom 2 sampai gambar diunggah
+    else: # Jika file sudah diunggah (st.session_state.uploaded_file bukan None)
         uploaded_file = st.session_state.uploaded_file
 
         try:
@@ -465,14 +471,15 @@ def main():
         except Exception as e:
             st.error("❌ Gagal membuka gambar. Pastikan ini adalah file gambar yang valid.")
             st.exception(e)
-            reset_prediction()
+            reset_prediction() # Tawarkan untuk mengunggah lagi jika ada error
             return
 
+        # Konversi gambar ke base64 untuk ditampilkan di Streamlit (HTML)
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
 
-        with col1:
+        with col1: # Kolom kiri untuk gambar dan hasil prediksi model
             st.markdown(
                 f"""<div style="text-align:center;">
                     <img src="data:image/png;base64,{img_str}" 
@@ -482,7 +489,7 @@ def main():
                 unsafe_allow_html=True
             )
 
-            # Menggunakan spinner kustom saat prediksi model
+            # Gunakan spinner kustom untuk prediksi model
             spinner_model = st.empty()
             spinner_model.markdown(render_custom_spinner("🔍 Menganalisis gambar dengan Ensemble Model..."), unsafe_allow_html=True)
 
@@ -498,11 +505,12 @@ def main():
 
             spinner_model.empty() # Hapus spinner setelah prediksi model selesai
             
+            # Dapatkan deskripsi penyakit dari Gemini
             description = get_disease_description(label)
             render_prediction_result(label, confidence, description)
 
-        with col2:
-            # Menggunakan spinner kustom saat mengambil saran dari Gemini
+        with col2: # Kolom kanan untuk saran penanganan dari Gemini
+            # Gunakan spinner kustom untuk mengambil saran dari Gemini
             spinner_gemini = st.empty()
             spinner_gemini.markdown(render_custom_spinner("🧠 Mengambil saran penanganan dari Gemini..."), unsafe_allow_html=True)
 
@@ -511,9 +519,10 @@ def main():
             spinner_gemini.empty() # Hapus spinner setelah saran Gemini didapatkan
             render_treatment_suggestion(label, suggestion)
 
+        # Tombol "Prediksi Lagi!" di bagian bawah
         st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
 
-    render_footer()
+    render_footer() # Render footer aplikasi
 
 if __name__ == "__main__":
     main()
