@@ -54,7 +54,6 @@ def apply_custom_styles():
         color: {TEXT_COLOR};
     }}
     /* Gaya untuk mengatur lebar maksimum gambar yang diunggah */
-    /* Kita tetap menggunakan max-width: 100% untuk responsivitas dalam kolomnya */
     .stApp img {{
         max-width: 100%; /* Pastikan gambar tidak melebihi lebar kolomnya */
         height: auto; /* Biarkan tinggi menyesuaikan agar aspek rasio terjaga */
@@ -62,9 +61,8 @@ def apply_custom_styles():
     }}
     /* Jika Anda ingin spesifik hanya gambar di kolom prediksi */
     .image-display-box img {{
-        /* Menggunakan 100% untuk width agar mengisi kolomnya */
         width: 100%; 
-        max-height: 450px; /* Batasi tinggi agar tidak terlalu besar di layar tinggi */
+        max-height: 450px; 
         object-fit: contain;
     }}
     /* Menyesuaikan lebar header agar konsisten (opsional, jika dirasa perlu) */
@@ -73,8 +71,8 @@ def apply_custom_styles():
         margin: auto; /* Pusatkan */
     }}
     .stApp .reportview-container .main .block-container {{
-        padding-top: 1rem; /* Kurangi padding atas jika terlalu banyak spasi */
-        padding-bottom: 1rem; /* Kurangi padding bawah jika terlalu banyak spasi */
+        padding-top: 1rem; 
+        padding-bottom: 1rem; 
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -437,8 +435,8 @@ def render_footer():
         <hr style="border: none; height: 2px; background-color: #89A827; margin-top: 60px;">
         <footer style="text-align: center; color: #555; font-size: 0.9em; padding: 12px;">
             Aplikasi ini menggunakan model <strong>Ensemble CNN</strong> dan <strong>Google Gemini</strong>.<br>
-            © 2025 | Dibuat dengan ❤️ oleh Tim Honda Mio<br>
-            <a href="mailto:oscariqbal75@gmail.com" style="color: #89A827; text-decoration: none;">Hubungi Kami</a>
+            © 2025 | Dibuat dengan ❤️ oleh Eldy Setiawan<br>
+            <a href="mailto:eldysetiawan6@gmail.com" style="color: #89A827; text-decoration: none;">Hubungi Kami</a>
         </footer>
         """,
         unsafe_allow_html=True
@@ -466,14 +464,13 @@ def main():
         st.session_state.upload_key = f"uploader_{np.random.randint(10000)}" 
         st.rerun() 
 
-    # Buat dua kolom untuk tata letak
-    # Tetap gunakan rasio kolom ini agar gambar memiliki ruang lebih
+    # Buat dua kolom lagi untuk tata letak
+    # col1 untuk gambar dan prediksi, col2 untuk saran
     col1, col2 = st.columns([1.5, 1]) 
 
     # Logika untuk menampilkan pengunggah file atau hasil prediksi
     if st.session_state.uploaded_file is None:
         with col1:
-            # st.file_uploader akan mengambil lebar kolomnya secara default
             uploaded = st.file_uploader("Unggah gambar daun jagung...", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key)
             
             if uploaded is not None and uploaded != st.session_state.uploaded_file:
@@ -483,7 +480,7 @@ def main():
             elif uploaded is None and st.session_state.uploaded_file is not None:
                 reset_prediction() 
         with col2:
-            st.empty() 
+            st.empty() # Kosongkan kolom kanan jika belum ada gambar
     else: 
         uploaded_file = st.session_state.uploaded_file
 
@@ -499,19 +496,19 @@ def main():
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
 
-        with col1: # Kolom kiri hanya untuk gambar
+        # Tempatkan gambar dan PREDIKSI di kolom KIRI (col1)
+        with col1: 
             st.markdown(
                 f"""<div class="image-display-box" style="text-align:center;">
                     <img src="data:image/png;base64,{img_str}" 
-                        style="width:100%; height: auto; /* Hapus max-width di sini */
+                        style="width:100%; height: auto; 
                                 background-color:#FFFFFF; margin-bottom: 10px; padding:16px; 
                                 border-radius:10px; box-shadow: 0 0 6px rgba(0,0,0,0.05);"/>
                 </div>""",
                 unsafe_allow_html=True
             )
-
-        with col2: # Kolom kanan untuk prediksi dan saran
-            # Jalankan prediksi model
+            
+            # Jalankan prediksi model di bawah gambar
             spinner_model = st.empty()
             spinner_model.markdown(render_custom_spinner("🔍 Menganalisis gambar dengan Ensemble Model..."), unsafe_allow_html=True)
             processed_image = preprocess_image(image)
@@ -525,21 +522,21 @@ def main():
                 return
             spinner_model.empty() 
             
-            # Tampilkan hasil prediksi
+            # Tampilkan hasil prediksi di bawah gambar
             description = get_disease_description(label)
             render_prediction_result(label, confidence, description)
+            
+            st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
 
-            st.markdown("<br>", unsafe_allow_html=True)
 
-            # Tampilkan saran penanganan dari Gemini
+        # Tempatkan SARAN PENANGANAN di kolom KANAN (col2)
+        with col2: 
             spinner_gemini = st.empty()
             spinner_gemini.markdown(render_custom_spinner("🧠 Mengambil saran penanganan dari Gemini..."), unsafe_allow_html=True)
             suggestion = get_treatment_suggestions(label)
             spinner_gemini.empty() 
             render_treatment_suggestion(label, suggestion)
             
-            st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
-
 
     render_footer() 
 
