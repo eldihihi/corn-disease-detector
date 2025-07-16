@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 import os
-import gdown  # Pastikan 'gdown' ada di requirements.txt Anda
+import gdown
 import requests
 import json
 import base64
@@ -53,6 +53,18 @@ def apply_custom_styles():
         font-size: 1em;
         color: {TEXT_COLOR};
     }}
+    /* Gaya untuk mengatur lebar maksimum gambar yang diunggah */
+    .stApp img {{
+        max-width: 100%; /* Pastikan gambar tidak melebihi lebar kolomnya */
+        height: auto; /* Biarkan tinggi menyesuaikan agar aspek rasio terjaga */
+        object-fit: contain; /* Pastikan seluruh gambar terlihat tanpa terpotong */
+    }}
+    /* Jika Anda ingin spesifik hanya gambar di kolom prediksi */
+    .image-display-box img {{
+        max-height: 400px; /* Contoh: atur tinggi maksimum */
+        width: auto; /* Biarkan lebar menyesuaikan */
+        object-fit: contain;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -65,9 +77,9 @@ CLASS_NAMES = ['Blight', 'Common_Rust', 'Gray_Leaf_Spot', 'Healthy']
 # --- FILE ID DARI GOOGLE DRIVE PUBLIK ANDA ---
 # PASTIKAN INI ADALAH FILE_ID YANG BENAR UNTUK MODEL ANDA!
 GDRIVE_FILE_IDS = {
-    'resnet': '1WZlTN5EMBTA06NMGNNYN6MyzeFQZPxPg',
-    'vgg': '11dXYwFYnhJB-t3JQhyETQxVvxrumaKwe',
-    'inception': '1STxuKijMG710wsPkFZhlqBVFgZbmO0Et'
+    'resnet': '1WZlTN5EMBTA06NMGNNYN6MyzeFQZPxPg', # Contoh ID
+    'vgg': '11dXYwFYnhJB-t3JQhyETQxVvxrumaKwe',      # Contoh ID
+    'inception': '1STxuKijMG710wsPkFZhlqBVFgZbmO0Et' # Contoh ID
 }
 
 # Nama file lokal untuk model setelah diunduh di lingkungan Streamlit Cloud
@@ -94,16 +106,18 @@ def load_all_models():
             os.makedirs(model_dir, exist_ok=True)
 
         if not os.path.exists(local_path):
-            # Pesan unduhan dihilangkan atau diganti dengan spinner kustom yang tidak terlalu 'berisik'
+            # Mengganti st.info/st.success dengan print() untuk mengurangi overhead UI
+            print(f"Mengunduh model {model_name} dari Google Drive...")
             try:
                 gdown.download(id=file_id, output=local_path, quiet=True, fuzzy=True) 
+                print(f"Model {model_name} berhasil diunduh!")
             except Exception as e:
                 st.error(f"❌ ERROR: Gagal mengunduh model {model_name} dari Google Drive.")
                 st.error(f"Pastikan FILE_ID ({file_id}) benar dan akses sharing link sudah diatur 'Anyone with the link'.")
                 st.error(f"Detail error: {e}")
                 st.stop()
         else:
-            pass # Lakukan apa-apa jika model sudah ada
+            print(f"Model {model_name} sudah ada secara lokal. Melewatkan pengunduhan.")
 
         try:
             loaded_models[model_name] = load_model(local_path)
@@ -440,30 +454,27 @@ def main():
         st.session_state.uploaded_file = None
         st.session_state.show_result = False
         st.session_state.upload_key = f"uploader_{np.random.randint(10000)}" 
-        st.rerun() # Memastikan Streamlit me-rerun dan kembali ke tampilan awal
+        st.rerun() 
 
     # Buat dua kolom untuk tata letak
+    # Kolom kiri (col1) untuk gambar (proporsi 1.2)
+    # Kolom kanan (col2) untuk prediksi dan saran (proporsi 1)
     col1, col2 = st.columns([1.2, 1])
 
     # Logika untuk menampilkan pengunggah file atau hasil prediksi
-    # Jika belum ada file diunggah atau reset_prediction dipanggil
     if st.session_state.uploaded_file is None:
         with col1:
-            # st.file_uploader akan mengembalikan None jika tidak ada file atau dihapus.
-            # Jika file baru diunggah, ia akan mengembalikan objek UploadedFile.
             uploaded = st.file_uploader("Unggah gambar daun jagung...", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key)
             
-            # Cek apakah ada file baru yang diunggah
             if uploaded is not None and uploaded != st.session_state.uploaded_file:
                 st.session_state.uploaded_file = uploaded
                 st.session_state.show_result = True
-                st.rerun() # Trigger rerun untuk memproses file yang baru diunggah
+                st.rerun() 
             elif uploaded is None and st.session_state.uploaded_file is not None:
-                # Ini kondisi jika pengguna menghapus file yang sudah diunggah
-                reset_prediction() # Reset state untuk kembali ke uploader
+                reset_prediction() 
         with col2:
-            st.empty() # Kosongkan kolom 2 sampai gambar diunggah
-    else: # Jika file sudah diunggah (st.session_state.uploaded_file bukan None)
+            st.empty() 
+    else: 
         uploaded_file = st.session_state.uploaded_file
 
         try:
@@ -471,28 +482,28 @@ def main():
         except Exception as e:
             st.error("❌ Gagal membuka gambar. Pastikan ini adalah file gambar yang valid.")
             st.exception(e)
-            reset_prediction() # Tawarkan untuk mengunggah lagi jika ada error
+            reset_prediction() 
             return
 
-        # Konversi gambar ke base64 untuk ditampilkan di Streamlit (HTML)
         buffered = BytesIO()
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
 
-        with col1: # Kolom kiri untuk gambar dan hasil prediksi model
+        with col1: # Kolom kiri hanya untuk gambar
             st.markdown(
-                f"""<div style="text-align:center;">
+                f"""<div class="image-display-box" style="text-align:center;">
                     <img src="data:image/png;base64,{img_str}" 
-                        style="width:100%; background-color:#FFFFFF; margin-bottom: 10px; padding:16px; 
+                        style="width:100%; max-width: 450px; height: auto; 
+                                background-color:#FFFFFF; margin-bottom: 10px; padding:16px; 
                                 border-radius:10px; box-shadow: 0 0 6px rgba(0,0,0,0.05);"/>
                 </div>""",
                 unsafe_allow_html=True
             )
 
-            # Gunakan spinner kustom untuk prediksi model
+        with col2: # Kolom kanan untuk prediksi dan saran
+            # Jalankan prediksi model
             spinner_model = st.empty()
             spinner_model.markdown(render_custom_spinner("🔍 Menganalisis gambar dengan Ensemble Model..."), unsafe_allow_html=True)
-
             processed_image = preprocess_image(image)
             try:
                 label, confidence = ensemble_predict_streamlit(processed_image)
@@ -502,27 +513,25 @@ def main():
                 st.exception(e)
                 reset_prediction()
                 return
-
-            spinner_model.empty() # Hapus spinner setelah prediksi model selesai
+            spinner_model.empty() 
             
-            # Dapatkan deskripsi penyakit dari Gemini
+            # Tampilkan hasil prediksi
             description = get_disease_description(label)
             render_prediction_result(label, confidence, description)
 
-        with col2: # Kolom kanan untuk saran penanganan dari Gemini
-            # Gunakan spinner kustom untuk mengambil saran dari Gemini
+            # Tambahkan sedikit spasi antar komponen (opsional)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # Tampilkan saran penanganan dari Gemini
             spinner_gemini = st.empty()
             spinner_gemini.markdown(render_custom_spinner("🧠 Mengambil saran penanganan dari Gemini..."), unsafe_allow_html=True)
-
             suggestion = get_treatment_suggestions(label)
-
-            spinner_gemini.empty() # Hapus spinner setelah saran Gemini didapatkan
+            spinner_gemini.empty() 
             render_treatment_suggestion(label, suggestion)
 
-        # Tombol "Prediksi Lagi!" di bagian bawah
         st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
 
-    render_footer() # Render footer aplikasi
+    render_footer() 
 
 if __name__ == "__main__":
     main()
