@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 import os
-import gdown # Pastikan 'gdown' ada di requirements.txt Anda
+import gdown 
 import requests
 import json
 import base64
@@ -90,21 +90,23 @@ def load_all_models():
         
         # Buat direktori 'models' jika belum ada
         model_dir = os.path.dirname(local_path)
-        if not os.path.exists(model_dir) and model_dir: # Pastikan model_dir tidak kosong jika path relatif
+        if not os.path.exists(model_dir) and model_dir:
             os.makedirs(model_dir, exist_ok=True)
 
         if not os.path.exists(local_path):
-            st.info(f"⬇️ Mengunduh model {model_name} dari Google Drive... Ini mungkin memakan waktu.")
+            # Pesan unduhan dihilangkan atau diganti dengan spinner kustom yang tidak terlalu 'berisik'
+            # st.info(f"⬇️ Mengunduh model {model_name} dari Google Drive... Ini mungkin memakan waktu.")
             try:
-                gdown.download(id=file_id, output=local_path, quiet=True, fuzzy=True) # fuzzy=True membantu jika ID sedikit beda
-                st.success(f"Model {model_name} berhasil diunduh!")
+                gdown.download(id=file_id, output=local_path, quiet=True, fuzzy=True) 
+                # st.success(f"Model {model_name} berhasil diunduh!") # Pesan berhasil dihilangkan
             except Exception as e:
                 st.error(f"❌ ERROR: Gagal mengunduh model {model_name} dari Google Drive.")
                 st.error(f"Pastikan FILE_ID ({file_id}) benar dan akses sharing link sudah diatur 'Anyone with the link'.")
                 st.error(f"Detail error: {e}")
                 st.stop()
         else:
-            st.info(f"Model {model_name} sudah ada secara lokal. Melewatkan pengunduhan.")
+            # st.info(f"Model {model_name} sudah ada secara lokal. Melewatkan pengunduhan.") # Pesan dihilangkan
+            pass # Lakukan apa-apa jika model sudah ada
 
         try:
             loaded_models[model_name] = load_model(local_path)
@@ -125,8 +127,8 @@ def preprocess_image(image):
     """
     img_resized = image.resize(IMAGE_SIZE)
     img_array = np.array(img_resized)
-    img_array = np.expand_dims(img_array, axis=0) # Tambahkan dimensi batch
-    img_array = img_array / 255.0 # Normalisasi piksel
+    img_array = np.expand_dims(img_array, axis=0) 
+    img_array = img_array / 255.0 
     return img_array
 
 def ensemble_predict_streamlit(image_array):
@@ -134,7 +136,6 @@ def ensemble_predict_streamlit(image_array):
     Menggabungkan prediksi dari ResNet50, VGG16, dan InceptionV3
     menggunakan soft voting (rata-rata probabilitas).
     """
-    # verbose=0 untuk menekan output log prediksi model
     pred_resnet = resnet_model.predict(image_array, verbose=0)
     pred_vgg = vgg_model.predict(image_array, verbose=0)
     pred_inception = inception_model.predict(image_array, verbose=0)
@@ -429,8 +430,8 @@ def main():
     apply_custom_styles()
     render_header()
 
-    # Model ensemble dimuat sekali
-    # resnet_model, vgg_model, inception_model = load_all_models() # Ini sudah dipanggil di global scope
+    # Model ensemble dimuat secara global di luar main() dengan @st.cache_resource
+    # jadi tidak perlu dipanggil di sini lagi, cukup panggil variabelnya langsung
 
     if "uploaded_file" not in st.session_state:
         st.session_state.uploaded_file = None
@@ -481,34 +482,33 @@ def main():
                 unsafe_allow_html=True
             )
 
-            spinner1 = st.empty()
-            spinner1.markdown(render_custom_spinner("🔍 Menganalisis gambar dengan Ensemble Model..."), unsafe_allow_html=True)
+            # Menggunakan spinner kustom saat prediksi model
+            spinner_model = st.empty()
+            spinner_model.markdown(render_custom_spinner("🔍 Menganalisis gambar dengan Ensemble Model..."), unsafe_allow_html=True)
 
-            # Preprocessing dan Prediksi menggunakan fungsi ensemble Anda
             processed_image = preprocess_image(image)
             try:
                 label, confidence = ensemble_predict_streamlit(processed_image)
             except Exception as e:
-                spinner1.empty()
+                spinner_model.empty()
                 st.error("❌ Terjadi kesalahan saat prediksi model ensemble. Pastikan model dimuat dengan benar.")
                 st.exception(e)
                 reset_prediction()
                 return
 
-            spinner1.empty()
+            spinner_model.empty() # Hapus spinner setelah prediksi model selesai
             
-            # Dapatkan deskripsi penyakit dari Gemini
             description = get_disease_description(label)
             render_prediction_result(label, confidence, description)
 
         with col2:
-            spinner2 = st.empty()
-            spinner2.markdown(render_custom_spinner("🧠 Mengambil saran penanganan dari Gemini..."), unsafe_allow_html=True)
+            # Menggunakan spinner kustom saat mengambil saran dari Gemini
+            spinner_gemini = st.empty()
+            spinner_gemini.markdown(render_custom_spinner("🧠 Mengambil saran penanganan dari Gemini..."), unsafe_allow_html=True)
 
-            # Dapatkan saran penanganan dari Gemini
             suggestion = get_treatment_suggestions(label)
 
-            spinner2.empty()
+            spinner_gemini.empty() # Hapus spinner setelah saran Gemini didapatkan
             render_treatment_suggestion(label, suggestion)
 
         st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
@@ -516,4 +516,3 @@ def main():
     render_footer()
 
 if __name__ == "__main__":
-    main()
