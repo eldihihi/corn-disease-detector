@@ -54,7 +54,6 @@ def apply_custom_styles():
         color: {TEXT_COLOR};
     }}
     /* Gaya untuk mengatur lebar maksimum gambar yang diunggah */
-    /* Kita tetap menggunakan max-width: 100% untuk responsivitas dalam kolomnya */
     .stApp img {{
         max-width: 100%; /* Pastikan gambar tidak melebihi lebar kolomnya */
         height: auto; /* Biarkan tinggi menyesuaikan agar aspek rasio terjaga */
@@ -62,9 +61,8 @@ def apply_custom_styles():
     }}
     /* Jika Anda ingin spesifik hanya gambar di kolom prediksi */
     .image-display-box img {{
-        /* Menggunakan 100% untuk width agar mengisi kolomnya */
         width: 100%; 
-        max-height: 450px; /* Batasi tinggi agar tidak terlalu besar di layar tinggi */
+        max-height: 450px; 
         object-fit: contain;
     }}
     /* Menyesuaikan lebar header agar konsisten (opsional, jika dirasa perlu) */
@@ -73,8 +71,8 @@ def apply_custom_styles():
         margin: auto; /* Pusatkan */
     }}
     .stApp .reportview-container .main .block-container {{
-        padding-top: 1rem; /* Kurangi padding atas jika terlalu banyak spasi */
-        padding-bottom: 1rem; /* Kurangi padding bawah jika terlalu banyak spasi */
+        padding-top: 1rem; 
+        padding-bottom: 1rem; 
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -88,9 +86,9 @@ CLASS_NAMES = ['Blight', 'Common_Rust', 'Gray_Leaf_Spot', 'Healthy']
 # --- FILE ID DARI GOOGLE DRIVE PUBLIK ANDA ---
 # PASTIKAN INI ADALAH FILE_ID YANG BENAR UNTUK MODEL ANDA!
 GDRIVE_FILE_IDS = {
-    'resnet': '1WZlTN5EMBTA06NMGNNYN6MyzeFQZPxPg', # Contoh ID
-    'vgg': '11dXYwFYnhJB-t3JQhyETQxVvxrumaKwe',      # Contoh ID
-    'inception': '1STxuKijMG710wsPkFZhlqBVFgZbmO0Et' # Contoh ID
+    'resnet': '1WZlTN5EMBTA06NMGNNYN6MyzeFQZPxPg', 
+    'vgg': '11dXYwFYnhJB-t3JQhyETQxVvxrumaKwe',      
+    'inception': '1STxuKijMG710wsPkFZhlqBVFgZbmO0Et' 
 }
 
 # Nama file lokal untuk model setelah diunduh di lingkungan Streamlit Cloud
@@ -117,7 +115,6 @@ def load_all_models():
             os.makedirs(model_dir, exist_ok=True)
 
         if not os.path.exists(local_path):
-            # Mengganti st.info/st.success dengan print() untuk mengurangi overhead UI
             print(f"Mengunduh model {model_name} dari Google Drive...")
             try:
                 gdown.download(id=file_id, output=local_path, quiet=True, fuzzy=True) 
@@ -468,14 +465,13 @@ def main():
         st.rerun() 
 
     # Buat dua kolom untuk tata letak
-    # *** Ubah proporsi kolom di sini ***
     col1, col2 = st.columns([1.5, 1]) 
 
     # Logika untuk menampilkan pengunggah file atau hasil prediksi
     if st.session_state.uploaded_file is None:
         with col1:
-            # Gunakan use_container_width=True untuk uploader agar mengisi lebar kolom
-            uploaded = st.file_uploader("Unggah gambar daun jagung...", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key, use_container_width=True)
+            # Hapus argumen use_container_width dari st.file_uploader
+            uploaded = st.file_uploader("Unggah gambar daun jagung...", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key)
             
             if uploaded is not None and uploaded != st.session_state.uploaded_file:
                 st.session_state.uploaded_file = uploaded
@@ -504,14 +500,12 @@ def main():
             st.markdown(
                 f"""<div class="image-display-box" style="text-align:center;">
                     <img src="data:image/png;base64,{img_str}" 
-                        style="width:100%; max-width: 600px; height: auto; /* Tingkatkan max-width */
+                        style="width:100%; max-width: 600px; height: auto; 
                                 background-color:#FFFFFF; margin-bottom: 10px; padding:16px; 
                                 border-radius:10px; box-shadow: 0 0 6px rgba(0,0,0,0.05);"/>
                 </div>""",
                 unsafe_allow_html=True
             )
-            
-
 
         with col2: # Kolom kanan untuk prediksi dan saran
             # Jalankan prediksi model
@@ -532,7 +526,6 @@ def main():
             description = get_disease_description(label)
             render_prediction_result(label, confidence, description)
 
-            # Tambahkan sedikit spasi antar komponen (opsional)
             st.markdown("<br>", unsafe_allow_html=True)
 
             # Tampilkan saran penanganan dari Gemini
@@ -542,8 +535,6 @@ def main():
             spinner_gemini.empty() 
             render_treatment_suggestion(label, suggestion)
             
-            # Pindahkan tombol Prediksi Lagi! ke sini (jika diinginkan di kolom kanan)
-            # Jika di sini, gunakan use_container_width=True agar tombol melebar
             st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
 
 
