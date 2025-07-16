@@ -54,6 +54,7 @@ def apply_custom_styles():
         color: {TEXT_COLOR};
     }}
     /* Gaya untuk mengatur lebar maksimum gambar yang diunggah */
+    /* Kita tetap menggunakan max-width: 100% untuk responsivitas dalam kolomnya */
     .stApp img {{
         max-width: 100%; /* Pastikan gambar tidak melebihi lebar kolomnya */
         height: auto; /* Biarkan tinggi menyesuaikan agar aspek rasio terjaga */
@@ -61,8 +62,9 @@ def apply_custom_styles():
     }}
     /* Jika Anda ingin spesifik hanya gambar di kolom prediksi */
     .image-display-box img {{
+        /* Menggunakan 100% untuk width agar mengisi kolomnya */
         width: 100%; 
-        max-height: 450px; 
+        max-height: 450px; /* Batasi tinggi agar tidak terlalu besar di layar tinggi */
         object-fit: contain;
     }}
     /* Menyesuaikan lebar header agar konsisten (opsional, jika dirasa perlu) */
@@ -71,8 +73,8 @@ def apply_custom_styles():
         margin: auto; /* Pusatkan */
     }}
     .stApp .reportview-container .main .block-container {{
-        padding-top: 1rem; 
-        padding-bottom: 1rem; 
+        padding-top: 1rem; /* Kurangi padding atas jika terlalu banyak spasi */
+        padding-bottom: 1rem; /* Kurangi padding bawah jika terlalu banyak spasi */
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -465,12 +467,13 @@ def main():
         st.rerun() 
 
     # Buat dua kolom untuk tata letak
+    # Tetap gunakan rasio kolom ini agar gambar memiliki ruang lebih
     col1, col2 = st.columns([1.5, 1]) 
 
     # Logika untuk menampilkan pengunggah file atau hasil prediksi
     if st.session_state.uploaded_file is None:
         with col1:
-            # Hapus argumen use_container_width dari st.file_uploader
+            # st.file_uploader akan mengambil lebar kolomnya secara default
             uploaded = st.file_uploader("Unggah gambar daun jagung...", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key)
             
             if uploaded is not None and uploaded != st.session_state.uploaded_file:
@@ -500,7 +503,7 @@ def main():
             st.markdown(
                 f"""<div class="image-display-box" style="text-align:center;">
                     <img src="data:image/png;base64,{img_str}" 
-                        style="width:100%; max-width: 600px; height: auto; 
+                        style="width:100%; height: auto; /* Hapus max-width di sini */
                                 background-color:#FFFFFF; margin-bottom: 10px; padding:16px; 
                                 border-radius:10px; box-shadow: 0 0 6px rgba(0,0,0,0.05);"/>
                 </div>""",
