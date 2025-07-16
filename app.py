@@ -54,6 +54,7 @@ def apply_custom_styles():
         color: {TEXT_COLOR};
     }}
     /* Gaya untuk mengatur lebar maksimum gambar yang diunggah */
+    /* Kita tetap menggunakan max-width: 100% untuk responsivitas dalam kolomnya */
     .stApp img {{
         max-width: 100%; /* Pastikan gambar tidak melebihi lebar kolomnya */
         height: auto; /* Biarkan tinggi menyesuaikan agar aspek rasio terjaga */
@@ -61,9 +62,19 @@ def apply_custom_styles():
     }}
     /* Jika Anda ingin spesifik hanya gambar di kolom prediksi */
     .image-display-box img {{
-        max-height: 400px; /* Contoh: atur tinggi maksimum */
-        width: auto; /* Biarkan lebar menyesuaikan */
+        /* Menggunakan 100% untuk width agar mengisi kolomnya */
+        width: 100%; 
+        max-height: 450px; /* Batasi tinggi agar tidak terlalu besar di layar tinggi */
         object-fit: contain;
+    }}
+    /* Menyesuaikan lebar header agar konsisten (opsional, jika dirasa perlu) */
+    .stApp .css-1lcbmhc {{ /* Ini class untuk main content container */
+        max-width: 1200px; /* Contoh: batasi lebar total aplikasi */
+        margin: auto; /* Pusatkan */
+    }}
+    .stApp .reportview-container .main .block-container {{
+        padding-top: 1rem; /* Kurangi padding atas jika terlalu banyak spasi */
+        padding-bottom: 1rem; /* Kurangi padding bawah jika terlalu banyak spasi */
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -457,14 +468,14 @@ def main():
         st.rerun() 
 
     # Buat dua kolom untuk tata letak
-    # Kolom kiri (col1) untuk gambar (proporsi 1.2)
-    # Kolom kanan (col2) untuk prediksi dan saran (proporsi 1)
-    col1, col2 = st.columns([1.2, 1])
+    # *** Ubah proporsi kolom di sini ***
+    col1, col2 = st.columns([1.5, 1]) 
 
     # Logika untuk menampilkan pengunggah file atau hasil prediksi
     if st.session_state.uploaded_file is None:
         with col1:
-            uploaded = st.file_uploader("Unggah gambar daun jagung...", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key)
+            # Gunakan use_container_width=True untuk uploader agar mengisi lebar kolom
+            uploaded = st.file_uploader("Unggah gambar daun jagung...", type=["jpg", "jpeg", "png"], key=st.session_state.upload_key, use_container_width=True)
             
             if uploaded is not None and uploaded != st.session_state.uploaded_file:
                 st.session_state.uploaded_file = uploaded
@@ -493,12 +504,14 @@ def main():
             st.markdown(
                 f"""<div class="image-display-box" style="text-align:center;">
                     <img src="data:image/png;base64,{img_str}" 
-                        style="width:100%; max-width: 450px; height: auto; 
+                        style="width:100%; max-width: 600px; height: auto; /* Tingkatkan max-width */
                                 background-color:#FFFFFF; margin-bottom: 10px; padding:16px; 
                                 border-radius:10px; box-shadow: 0 0 6px rgba(0,0,0,0.05);"/>
                 </div>""",
                 unsafe_allow_html=True
             )
+            
+
 
         with col2: # Kolom kanan untuk prediksi dan saran
             # Jalankan prediksi model
@@ -528,8 +541,11 @@ def main():
             suggestion = get_treatment_suggestions(label)
             spinner_gemini.empty() 
             render_treatment_suggestion(label, suggestion)
+            
+            # Pindahkan tombol Prediksi Lagi! ke sini (jika diinginkan di kolom kanan)
+            # Jika di sini, gunakan use_container_width=True agar tombol melebar
+            st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
 
-        st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
 
     render_footer() 
 
