@@ -454,6 +454,8 @@ def main():
         st.rerun() 
 
     # Buat dua kolom untuk tata letak
+    # Kolom kiri (col1) untuk gambar (proporsi 1.2)
+    # Kolom kanan (col2) untuk prediksi dan saran (proporsi 1)
     col1, col2 = st.columns([1.2, 1])
 
     # Logika untuk menampilkan pengunggah file atau hasil prediksi
@@ -484,20 +486,23 @@ def main():
         image.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
 
-        with col1: 
+        with col1: # Kolom kiri hanya untuk gambar
             st.markdown(
                 f"""<div class="image-display-box" style="text-align:center;">
                     <img src="data:image/png;base64,{img_str}" 
-                        style="width:100%; max-width: 450px; height: auto; /* Tambahkan max-width dan height: auto */
+                        style="width:100%; max-width: 450px; height: auto; 
                                 background-color:#FFFFFF; margin-bottom: 10px; padding:16px; 
                                 border-radius:10px; box-shadow: 0 0 6px rgba(0,0,0,0.05);"/>
                 </div>""",
                 unsafe_allow_html=True
             )
-            # 
+            # Anda bisa menambahkan elemen lain di bawah gambar di sini jika perlu,
+            # seperti tombol atau teks tambahan, tapi biarkan prediksi di kolom kanan.
+
+        with col2: # Kolom kanan untuk prediksi dan saran
+            # Jalankan prediksi model
             spinner_model = st.empty()
             spinner_model.markdown(render_custom_spinner("🔍 Menganalisis gambar dengan Ensemble Model..."), unsafe_allow_html=True)
-
             processed_image = preprocess_image(image)
             try:
                 label, confidence = ensemble_predict_streamlit(processed_image)
@@ -507,20 +512,21 @@ def main():
                 st.exception(e)
                 reset_prediction()
                 return
-
             spinner_model.empty() 
             
+            # Tampilkan hasil prediksi
             description = get_disease_description(label)
-            render_prediction_result(label, confidence, description)
+            render_prediction_result(label, confidence, description) # Ini sekarang di col2
 
-        with col2: 
+            # Tambahkan sedikit spasi antar komponen (opsional)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # Tampilkan saran penanganan dari Gemini
             spinner_gemini = st.empty()
             spinner_gemini.markdown(render_custom_spinner("🧠 Mengambil saran penanganan dari Gemini..."), unsafe_allow_html=True)
-
             suggestion = get_treatment_suggestions(label)
-
             spinner_gemini.empty() 
-            render_treatment_suggestion(label, suggestion)
+            render_treatment_suggestion(label, suggestion) # Ini juga di col2
 
         st.button("🔁 Prediksi Lagi!", use_container_width=True, on_click=reset_prediction)
 
